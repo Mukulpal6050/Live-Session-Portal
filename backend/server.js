@@ -17,9 +17,25 @@ app.use("/api/auth", authRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
-// ✅ Default route for root URL
+// ✅ Root route
 app.get("/", (req, res) => {
   res.send("✅ Live Session Portal Backend is Running Successfully!");
+});
+
+// ✅ Database test route
+app.get("/api/test-db", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT NOW() AS current_time");
+    res.json({
+      message: "✅ Database connected successfully!",
+      current_time: rows[0].current_time,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "❌ Database connection failed!",
+      details: error.message,
+    });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
