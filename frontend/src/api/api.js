@@ -4,7 +4,7 @@ import { logoutUser, getToken } from "../utils/auth";
 import { toast } from "react-hot-toast";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // adjust if needed
+  baseURL: "https://live-session-portal-backend.onrender.com", // adjust if needed
   timeout: 15000,
 });
 
