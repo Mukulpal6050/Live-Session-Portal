@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import db from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
-import sessionRoutes from "./routes/sessionRoutes.js";  // ✅ add this line
-import attendanceRoutes from "./routes/attendanceRoutes.js"; // ✅ add this line (for later use)
+import sessionRoutes from "./routes/sessionRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 
 dotenv.config();
 
@@ -16,6 +16,11 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/attendance", attendanceRoutes);
+
+// ✅ Default route for root URL
+app.get("/", (req, res) => {
+  res.send("✅ Live Session Portal Backend is Running Successfully!");
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
