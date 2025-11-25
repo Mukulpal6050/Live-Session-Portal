@@ -31,6 +31,11 @@ This project includes:
 
 🧪 Live Demo
 
+Auth Details:
+
+Email:  sample@example.com
+Password: 6 digit password
+
 Frontend (React + Vite)
 https://live-session-portal.vercel.app/
 
