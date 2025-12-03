@@ -3,11 +3,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import API from "../../api/api";
 import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
+import io from "socket.io-client";
 
 import StatsCard from "../../components/StatsCard";
 import SessionForm from "../../components/SessionForm";
 import LiveSessionPreview from "../../components/LiveSessionPreview";
 import RecentSessionsTable from "../../components/RecentSessionsTable";
+
+// ✅ Connect to backend socket
+const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:5000");
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalStudents: 0, totalSessions: 0, activeSessions: 0 });
@@ -34,6 +38,7 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  // ✅ Function to clean YouTube link
   const cleanYouTubeUrl = (url) => {
     if (!url) return url;
     try {
@@ -45,6 +50,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // ✅ Start Live Session (and emit socket event)
   const startSession = useCallback(async () => {
     if (!title.trim()) return toast.error("Please enter a session title");
 
@@ -58,7 +64,7 @@ export default function AdminDashboard() {
         video_url: cleanYouTubeUrl(videoUrl),
       });
 
-      toast.success("Session created");
+      toast.success("Live Session started");
       setTitle("");
       setVideoUrl("");
 
@@ -66,11 +72,18 @@ export default function AdminDashboard() {
         unique_id: res.data.session_code,
         userurl: res.data.userurl,
         video_url: cleanYouTubeUrl(videoUrl),
+        title,
       };
-      setCurrentSession(newSession);
 
-      // Optimistically update sessions
-      setSessions(prev => [{ id: Date.now(), title, session_code: res.data.session_code, status: "active", created_at: new Date().toISOString() }, ...prev]);
+      // ✅ Save locally
+      setCurrentSession(newSession);
+      setSessions(prev => [
+        { id: Date.now(), title, session_code: res.data.session_code, status: "active", created_at: new Date().toISOString() },
+        ...prev,
+      ]);
+
+      // ✅ Emit to backend (students will get notified in real-time)
+      socket.emit("session_started", newSession);
 
     } catch (err) {
       console.error(err);
@@ -83,8 +96,13 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 w-full min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 text-gray-900">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="flex flex-col lg:flex-row items-start gap-6 mb-8">
-        <div className="flex-1 ">
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="flex flex-col lg:flex-row items-start gap-6 mb-8"
+      >
+        <div className="flex-1">
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">
             Welcome back, Admin!
           </h1>
@@ -100,10 +118,19 @@ export default function AdminDashboard() {
             isCreating={isCreating}
           />
         </div>
-        <motion.div initial={{ opacity: 0, scale: 0.995, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full lg:w-96 flex-none">
-          <div className=" flex flex-row justify-center items-center">
-            <img src="/main.jpg" alt="Admin analytics" className="w-auto  h-48 object-cover transition-transform transform hover:scale-105" />
 
+        <motion.div
+          initial={{ opacity: 0, scale: 0.995, y: 6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full lg:w-96 flex-none"
+        >
+          <div className="flex flex-row justify-center items-center">
+            <img
+              src="/main.jpg"
+              alt="Admin analytics"
+              className="w-auto h-48 object-cover transition-transform transform hover:scale-105"
+            />
           </div>
         </motion.div>
       </motion.div>

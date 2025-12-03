@@ -1,4 +1,3 @@
-// src/pages/student/StudentDashboard.jsx
 import React, { useEffect, useState, useContext } from "react";
 import { toast } from "react-hot-toast";
 import { fetchSessions, joinSession } from "../../api/sessionAPI";
@@ -7,14 +6,18 @@ import EmptyState from "../../components/EmptyState";
 import SessionCard from "../../components/SessionCard";
 import { AuthContext } from "../../components/AuthProvider";
 import { motion } from "framer-motion";
+import io from "socket.io-client";
+
+// ✅ Connect socket to backend
+const socket = io(import.meta.env.VITE_BACKEND_URL || "http://localhost:5000");
 
 export default function StudentDashboard() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(null);
-
   const { user } = useContext(AuthContext);
 
+  // ✅ Fetch sessions when page loads
   useEffect(() => {
     const loadSessions = async () => {
       try {
@@ -30,6 +33,19 @@ export default function StudentDashboard() {
     loadSessions();
   }, []);
 
+  // ✅ Listen to socket event for new sessions
+  useEffect(() => {
+    socket.on("session_started", (newSession) => {
+      toast.success(`🎥 New Live Session Started: ${newSession.title}`);
+      setSessions((prev) => [newSession, ...prev]);
+    });
+
+    return () => {
+      socket.off("session_started");
+    };
+  }, []);
+
+  // ✅ Join Session
   const handleJoin = async (session) => {
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
     const userId = storedUser?.id || user?.id || user?._id;
@@ -51,6 +67,7 @@ export default function StudentDashboard() {
     }
   };
 
+  // ✅ Render sessions
   const renderSessions = () => {
     if (loading) return <Loader text="Fetching active sessions..." />;
 
@@ -60,7 +77,7 @@ export default function StudentDashboard() {
       );
 
     return (
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -80,16 +97,15 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 py-12">
-
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         className="flex flex-col lg:flex-row justify-center items-center min-h-[75vh] px-6 gap-10"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
       >
         {/* Text */}
-        <motion.div 
+        <motion.div
           className="lg:w-1/2 flex flex-col justify-center"
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -99,10 +115,13 @@ export default function StudentDashboard() {
             Welcome to <span className="text-blue-600">LiveClass Portal</span>
             {user?.name ? `, ${user.name}` : ""}!
           </h1>
-          <p className="text-gray-500 text-base mt-2">Learn LIVE. Practice LIVE. Grow LIVE.</p>
+          <p className="text-gray-500 text-base mt-2">
+            Learn LIVE. Practice LIVE. Grow LIVE.
+          </p>
 
           <p className="text-gray-700 text-lg mt-4">
-            Your gateway to live online classes, real-time attendance tracking, and interactive learning.
+            Your gateway to live online classes, real-time attendance tracking,
+            and interactive learning.
           </p>
         </motion.div>
 
@@ -123,21 +142,23 @@ export default function StudentDashboard() {
       </motion.div>
 
       {/* Info Cards */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 px-6"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        {["Upcoming Sessions","Recent Attendance","Active Sessions"].map((t,i)=>(
-          <motion.div 
-            key={i} 
-            className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all hover:scale-[1.02] border border-gray-100"
-            whileHover={{ y: -5 }}
-          >
-            <h2 className="text-xl font-semibold mt-1">{t}</h2>
-          </motion.div>
-        ))}
+        {["Upcoming Sessions", "Recent Attendance", "Active Sessions"].map(
+          (t, i) => (
+            <motion.div
+              key={i}
+              className="bg-white p-6 rounded-2xl shadow hover:shadow-xl transition-all hover:scale-[1.02] border border-gray-100"
+              whileHover={{ y: -5 }}
+            >
+              <h2 className="text-xl font-semibold mt-1">{t}</h2>
+            </motion.div>
+          )
+        )}
       </motion.div>
 
       {/* Active Sessions */}
